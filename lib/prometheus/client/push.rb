@@ -26,7 +26,7 @@ module Prometheus
       PATH            = '/metrics/job/%s'.freeze
       SUPPORTED_SCHEMES = %w(http https).freeze
 
-      attr_reader :job, :gateway, :path
+      attr_reader :job, :gateway, :path, :token
 
       def initialize(job:, gateway: DEFAULT_GATEWAY, grouping_key: {}, **kwargs)
         raise ArgumentError, "job cannot be nil" if job.nil?
@@ -52,6 +52,10 @@ module Prometheus
       def basic_auth(user, password)
         @user = user
         @password = password
+      end
+
+      def bearer_token(bearer_token)
+        @bearer_token = bearer_token
       end
 
       def add(registry)
@@ -121,6 +125,7 @@ module Prometheus
         req = req_class.new(@uri)
         req.content_type = Formats::Text::CONTENT_TYPE
         req.basic_auth(@user, @password) if @user
+        req['Authorization'] = "Bearer #{@bearer_token}" if @bearer_token
         req.body = Formats::Text.marshal(registry) if registry
 
         response = @http.request(req)
